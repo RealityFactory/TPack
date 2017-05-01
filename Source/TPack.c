@@ -249,11 +249,11 @@ static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *P
 		goto fail;
 	}
 	geBitmap_GetInfo(Bitmap, &PInfo, &SInfo);
-	if	(PInfo.Format != GE_PIXELFORMAT_8BIT)
-	{
-		NonFatalError("%s is not an 8bit bitmap", Path);
-		goto fail;
-	}
+//	if	(PInfo.Format != GE_PIXELFORMAT_8BIT)
+//	{
+//		NonFatalError("%s is not an 8bit bitmap", Path);
+//		goto fail;
+//	}
 	NewBitmapList = geRam_Realloc(pData->Bitmaps, sizeof(*NewBitmapList) * (pData->BitmapCount + 1));
 	if	(!NewBitmapList)
 	{
@@ -537,6 +537,7 @@ static	BOOL Render2d_Blit(HDC hDC, HBITMAP Bmp, const RECT *SourceRect, const RE
     }
     else
     {
+		  SetStretchBltMode(hDC, COLORONCOLOR);
     	StretchBlt(hDC,
         		   DestRect->left,
         		   DestRect->top,
@@ -1198,11 +1199,15 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 	uint32           nBytesPerPixel;
 	void *           pPixelData;
 	uint8 *          pOut = NULL;
+	uint8 *          pTmp = NULL;
 	int              nNewStride = 0;
 	int              nOldStride = 0;
 	int              i;
 	HANDLE           hFile = NULL;
 	DWORD            nBytesWritten;
+	uint8 *pNew;
+	uint8 *pOld;
+	int    y;
 //	uint8            PaletteData[768];        // palette data (see note below)
 
 	// Create the .BMP file.
@@ -1308,18 +1313,14 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 	//       have to allocate a new pixel buffer.
 	if (nNewStride == nOldStride)
 	{
-		pOut = (uint8 *)pPixelData;
+		pTmp = (uint8 *)pPixelData;
 	}
 
 	// Allocate new pixel buffer.
 	else
 	{
-		uint8 *pNew;
-		uint8 *pOld;
-		int    y;
-
-		pOut = (uint8 *)geRam_Allocate(nNewStride * BitmapInfo.Height);
-		if (pOut == (uint8 *)0)
+		pTmp = (uint8 *)geRam_Allocate(nNewStride * BitmapInfo.Height);
+		if (pTmp == (uint8 *)0)
 		{
 			// Memory allocation error
 			nErrorCode = TPACKERROR_MEMORYALLOCATION;
@@ -1327,7 +1328,7 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 		}
 
 
-		pNew = (uint8 *)pOut;
+		pNew = (uint8 *)pTmp;
 		pOld = (uint8 *)pPixelData;
 
 		// Copy old to new
@@ -1340,6 +1341,30 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 			pNew += nNewStride;
 		}
 	}
+
+	pOut = (uint8 *)geRam_Allocate(nNewStride * BitmapInfo.Height);
+	if (pOut == (uint8 *)0)
+	{
+		// Memory allocation error
+		nErrorCode = TPACKERROR_MEMORYALLOCATION;
+		goto ExitWriteBitmap;
+	}
+
+	pNew = (uint8 *)pOut;
+	pOld = (uint8 *)(pTmp+(nNewStride * (BitmapInfo.Height-1)));
+
+	// Copy old to new
+	for (y = 0; y < BitmapInfo.Height; y++)
+	{
+		memcpy(pNew, pOld, nNewStride);
+
+		// Next row
+		pOld -= nNewStride;
+		pNew += nNewStride;
+	}
+
+	if (pTmp && nNewStride != nOldStride)
+		geRam_Free(pTmp);
 
 	// Build the file header
     BmpHeader.bfType = 0x4d42;        // 0x42 = "B" 0x4d = "M" 
@@ -1393,9 +1418,7 @@ ExitWriteBitmap:
 	if (hFile)
 		CloseHandle(hFile);
 
-	// If the temp pixel buffer was allocated, then free it
-	if (pOut && nNewStride != nOldStride)
-		geRam_Free(pOut);
+	geRam_Free(pOut);
 
 	// Unlock the geBitmap
 	if ( pLock != pBitmap )
