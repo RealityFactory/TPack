@@ -55,6 +55,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+//#include "FreeImage.h"
+
 #include "resource.h"
 #include "genesis.h"
 #include "bitmap.h"
@@ -74,6 +76,7 @@ typedef	struct	BitmapEntry
 	char *		Name;
 	geBitmap *	Bitmap;
 	HBITMAP		WinBitmap;
+	HBITMAP		WinABitmap;
 	unsigned	Flags;
 }	BitmapEntry;
 
@@ -209,6 +212,39 @@ static	void	Save(TPack_WindowData *pData, const char *Path)
 		pData->Dirty = FALSE;
 }
 
+long DLL_CALLCONV VFS_Tell(fi_handle handle)
+{
+	long position;
+	geVFile *File = (geVFile *)handle;
+	geVFile_Tell(File, &position);
+	return position;
+}
+
+int DLL_CALLCONV VFS_Seek(fi_handle handle, long offset, int origin)
+{
+	geVFile *File = (geVFile *)handle;
+	geVFile_Whence whence;
+
+	if(origin==SEEK_SET)
+		whence = GE_VFILE_SEEKSET;
+	else if(origin==SEEK_CUR)
+		whence = GE_VFILE_SEEKCUR;
+	else
+		whence = GE_VFILE_SEEKEND;
+	if(geVFile_Seek(File, (int)offset, whence)==GE_TRUE)
+		return 0;
+	else
+		return 1;
+}
+
+unsigned DLL_CALLCONV VFS_Read(void *buffer, unsigned size, unsigned count, fi_handle handle)
+{
+	geVFile *File = (geVFile *)handle;
+	unsigned csize = size*count;
+	geVFile_Read(File, buffer, (int)csize);
+	return csize;
+}
+
 static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *Path)
 {
 	geBitmap_Info	PInfo;
@@ -242,12 +278,112 @@ static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *P
 	}
 
 	Bitmap = geBitmap_CreateFromFile(File);
-	geVFile_Close(File);
-	if	(!Bitmap)
+/*
+	if(!Bitmap)
 	{
-		NonFatalError("%s is not a valid bitmap", Path);
-		goto fail;
+		FreeImageIO io;
+		FIBITMAP *Fbmp32;
+		geBitmap *LockedBMP;
+		geBitmap_Info Info;
+		unsigned char *gptr ,*fptr;
+		int bpp, nFormat;
+		int FStride;
+		int width, height;
+		FREE_IMAGE_FORMAT fif;
+		FIBITMAP *Fbmp;
+
+		io.read_proc = VFS_Read;
+		io.write_proc = NULL;
+		io.seek_proc = VFS_Seek;
+		io.tell_proc = VFS_Tell;
+		fif = FreeImage_GetFileTypeFromHandle(&io, (fi_handle)File, 16);
+		if(fif>=0)
+		{
+			Fbmp = FreeImage_LoadFromHandle(fif, &io, (fi_handle)File, 0);
+			bpp = (int)FreeImage_GetBPP(Fbmp);
+			width = (int)FreeImage_GetWidth(Fbmp);
+			height = (int)FreeImage_GetHeight(Fbmp);
+			if(bpp==32)
+			{
+				Fbmp32 = FreeImage_Clone(Fbmp);
+				nFormat = GE_PIXELFORMAT_32BIT_BGRA;
+			}
+			else
+			{
+				if(bpp!=24)
+					Fbmp32 = FreeImage_ConvertTo24Bits(Fbmp);
+				else
+					Fbmp32 = FreeImage_Clone(Fbmp);
+				nFormat = GE_PIXELFORMAT_24BIT_BGR;
+			}
+
+			Bitmap = geBitmap_Create(width, height, 0, (gePixelFormat)nFormat);
+			if(Bitmap)
+			{
+				geBitmap_GetInfo(Bitmap,&Info,NULL);
+				geBitmap_LockForWriteFormat(Bitmap,&LockedBMP,0,0, (gePixelFormat)nFormat);
+				if(LockedBMP == NULL)
+				{
+					geBitmap_SetFormat(Bitmap,(gePixelFormat)nFormat,GE_TRUE,0,NULL);
+					geBitmap_LockForWriteFormat(Bitmap,&LockedBMP,0,0, (gePixelFormat)nFormat);
+				}
+				if(LockedBMP)
+				{
+					int y;
+					FStride = (int)FreeImage_GetPitch(Fbmp32);
+					gptr = (LPBYTE)geBitmap_GetBits(LockedBMP);
+					if(nFormat == GE_PIXELFORMAT_32BIT_BGRA)
+						gptr += (height-1)*(Info.Stride*4);
+					else
+						gptr += (height-1)*(Info.Stride*3);
+					fptr = FreeImage_GetBits(Fbmp32);
+					for(y=0; y < Info.Height; y++)
+					{
+						if(nFormat == GE_PIXELFORMAT_32BIT_BGRA)
+						{
+							__asm
+							{
+								mov esi, fptr
+								mov edi, gptr
+								mov ecx, width
+								rep movsd
+							}
+							gptr -= (Info.Stride*4);
+						}
+						else
+						{
+							int nTemp = width * 3;
+							__asm
+							{
+								mov esi, fptr
+								mov edi, gptr
+								mov ecx, nTemp
+								rep movs
+							}
+							gptr -= (Info.Stride*3);
+						}
+						fptr += FStride;
+					}
+					geBitmap_UnLock(LockedBMP);
+				}
+				else
+				{
+					geBitmap_Destroy(&Bitmap);
+					Bitmap = NULL;
+				}
+			}
+			FreeImage_Free(Fbmp32);
+			FreeImage_Free(Fbmp);
+		}
+		if(!Bitmap)
+		{
+			NonFatalError("%s is not a valid bitmap", Path);
+			geVFile_Close(File);
+			goto fail;
+		}
 	}
+*/
+	geVFile_Close(File);
 	geBitmap_GetInfo(Bitmap, &PInfo, &SInfo);
 //	if	(PInfo.Format != GE_PIXELFORMAT_8BIT)
 //	{
@@ -264,6 +400,7 @@ static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *P
 	NewBitmapList[pData->BitmapCount].Name		= Name;
 	NewBitmapList[pData->BitmapCount].Bitmap	= Bitmap;
 	NewBitmapList[pData->BitmapCount].WinBitmap	= NULL;
+	NewBitmapList[pData->BitmapCount].WinABitmap	= NULL;
 	NewBitmapList[pData->BitmapCount].Flags		= 0;
 	pData->BitmapCount++;
 	pData->Bitmaps = NewBitmapList;
@@ -317,6 +454,8 @@ static	void	Load(TPack_WindowData *pData)
 			geBitmap_Destroy(&pData->Bitmaps[i].Bitmap);
 			if	(pData->Bitmaps[i].WinBitmap)
 				DeleteObject(pData->Bitmaps[i].WinBitmap);
+			if	(pData->Bitmaps[i].WinABitmap)
+				DeleteObject(pData->Bitmaps[i].WinABitmap);
 		}
 	}
 	if	(pData->Bitmaps)
@@ -449,36 +588,83 @@ static HBITMAP CreateHBitmapFromgeBitmap (geBitmap *Bitmap, HDC hdc)
 		bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 10000;
 		bmih.biClrUsed = bmih.biClrImportant = 0;
 
-		if ( (info.Stride*pelbytes) == (((info.Stride*pelbytes)+3)&(~3)) )
-		{
-			bmih.biWidth = info.Stride;
-			hbm = CreateDIBitmap( hdc, &bmih , CBM_INIT , bits, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
-		}
-		else
+/*  11/22/2002 Wendell Buckner                                                          */
+/*   Display bitmaps greater than 1024x1024 resolutions by scaling them into 1024x1024  */
+/*   bitmaps                                                                            */
+		if ( abs(info.Height) > 1024 ) //display large bitmaps (> 2048 x 2048)
 		{
 			void * newbits;
 			int Stride;
 
-			bmih.biWidth = info.Width;
-			Stride = (((info.Width*pelbytes)+3)&(~3));
-			newbits = geRam_Allocate(Stride * info.Height);
+			bmih.biWidth = 1024;
+			bmih.biHeight = - 1024;
+
+			Stride = (((1024 * pelbytes)+3)&(~3));
+			newbits = geRam_Allocate(Stride * 1024);
+
 			if ( newbits )
 			{
 				char *newptr,*oldptr;
 				int y;
+				int z;
+				int c = info.Width / 1024;
 
 				newptr = (char *)newbits;
 				oldptr = (char *)bits;
-				for(y=0; y<info.Height; y++)
+
+				for(y=0; y < 1024; y++)
 				{
-					memcpy(newptr,oldptr,(info.Width)*pelbytes);
-					oldptr += info.Stride*pelbytes;
-					newptr += Stride;
+					newptr = (char *) newbits + (y * Stride);
+					oldptr = (char *) bits    + (c * (y * (info.Stride*pelbytes)));
+
+					for(z=0; z < 1024; z++)
+					{
+						memcpy ( newptr, oldptr, pelbytes );
+						oldptr += ( c * pelbytes );
+						newptr += pelbytes;
+					}
+
 				}
+
 				hbm = CreateDIBitmap( hdc, &bmih , CBM_INIT , newbits, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
 				geRam_Free(newbits);
 			}
+
 		}
+		else
+		{
+			if ( (info.Stride*pelbytes) == (((info.Stride*pelbytes)+3)&(~3)) )
+			{
+				bmih.biWidth = info.Stride;
+				hbm = CreateDIBitmap( hdc, &bmih , CBM_INIT , bits, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
+			}
+			else
+			{
+				void * newbits;
+				int Stride;
+
+				bmih.biWidth = info.Width;
+				Stride = (((info.Width*pelbytes)+3)&(~3));
+				newbits = geRam_Allocate(Stride * info.Height);
+				if ( newbits )
+				{
+					char *newptr,*oldptr;
+					int y;
+
+					newptr = (char *)newbits;
+					oldptr = (char *)bits;
+					for(y=0; y<info.Height; y++)
+					{
+						memcpy(newptr,oldptr,(info.Width)*pelbytes);
+						oldptr += info.Stride*pelbytes;
+						newptr += Stride;
+					}
+					hbm = CreateDIBitmap( hdc, &bmih , CBM_INIT , newbits, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
+					geRam_Free(newbits);
+				}
+			}
+		}
+/**************************************************************************************************************/
 	}
 
 	if ( Lock != Bitmap )
@@ -505,7 +691,7 @@ static	BitmapEntry *FindBitmap(TPack_WindowData *pData, const char *Name)
 	return NULL;
 }
 
-static	BOOL Render2d_Blit(HDC hDC, HBITMAP Bmp, const RECT *SourceRect, const RECT *DestRect)
+static	BOOL Render2d_Blit(HDC hDC, HBITMAP Bmp,  HBITMAP Alpha, const RECT *SourceRect, const RECT *DestRect)
 {
 	HDC		MemDC;
     int		SourceWidth;
@@ -520,36 +706,37 @@ static	BOOL Render2d_Blit(HDC hDC, HBITMAP Bmp, const RECT *SourceRect, const RE
 	SelectObject(MemDC, Bmp);
 
 	SourceWidth = SourceRect->right - SourceRect->left;
-   	SourceHeight = SourceRect->bottom - SourceRect->top;
+	SourceHeight = SourceRect->bottom - SourceRect->top;
 	DestWidth = DestRect->right - DestRect->left;
-   	DestHeight = DestRect->bottom - DestRect->top;
-    if	(SourceWidth == DestWidth && SourceHeight == DestHeight)
-    {
-		BitBlt(hDC,
-        	   DestRect->left,
-               DestRect->top,
-               DestRect->right - DestRect->left,
-               DestRect->bottom - DestRect->top,
-               MemDC,
-               SourceRect->left,
-               SourceRect->top,
-               SRCCOPY);
-    }
-    else
-    {
-		  SetStretchBltMode(hDC, COLORONCOLOR);
-    	StretchBlt(hDC,
-        		   DestRect->left,
-        		   DestRect->top,
-                   DestWidth,
-                   DestHeight,
-                   MemDC,
-        		   SourceRect->left,
-        		   SourceRect->top,
-                   SourceWidth,
-                   SourceHeight,
-                   SRCCOPY);
-    }
+	DestHeight = DestRect->bottom - DestRect->top;
+	SetStretchBltMode(hDC, COLORONCOLOR);
+	StretchBlt(hDC,
+				   DestRect->left,
+				   DestRect->top,
+				   DestHeight,
+				   DestHeight,
+				   MemDC,
+				   SourceRect->left,
+				   SourceRect->top,
+				   SourceWidth,
+				   SourceHeight,
+				   SRCCOPY);
+	if(Alpha)
+	{
+		SelectObject(MemDC, Alpha);
+		SetStretchBltMode(hDC, COLORONCOLOR);
+		StretchBlt(hDC,
+				   DestRect->left+DestHeight+2,
+				   DestRect->top,
+				   DestHeight,
+				   DestHeight,
+				   MemDC,
+				   SourceRect->left,
+				   SourceRect->top,
+				   SourceWidth,
+				   SourceHeight,
+				   SRCCOPY);
+	}
 
 	DeleteDC(MemDC);
 
@@ -677,12 +864,18 @@ static BOOL CALLBACK TPack_PreviewWndProc
 			Source.top = 0;
 			Source.bottom = geBitmap_Height(Entry->Bitmap);
 			Source.right = geBitmap_Width(Entry->Bitmap);
+/* 11/22/2002 Wendell Buckner
+    Display bitmaps greater than 1024x1024 resolutions by scaling them into 1024x1024 bitmaps */
+			if (Source.bottom > 1024) Source.bottom = 1024;
+			if (Source.right  > 1024) Source.right  = 1024;
+
 			Dest = Rect;
 
 			hDC = GetDC(hwnd);
 			SetStretchBltMode(hDC, HALFTONE);
 			Render2d_Blit(hDC,
 						  Entry->WinBitmap,
+						  Entry->WinABitmap,
 						  &Source,
 						  &Dest);
 			ReleaseDC(hwnd, hDC);
@@ -780,6 +973,8 @@ static BOOL TPack_InitializeDialog (HWND hwnd)
 
 	DragAcceptFiles (hwnd, TRUE);
 
+	FreeImage_Initialise(FALSE);
+
 	return TRUE;
 }
 
@@ -798,6 +993,8 @@ static void TPack_ShutdownAll
 
 		geRam_Free (pData);
 	}
+
+	FreeImage_DeInitialise();
 
 	SetWindowLong (hwnd, GWL_USERDATA, (LPARAM)NULL);
 }
@@ -848,6 +1045,8 @@ static BOOL CALLBACK TPack_DlgProc
 			geBitmap_Destroy(&Entry->Bitmap);
 		if	(Entry->WinBitmap)
 			DeleteObject(Entry->WinBitmap);
+		if	(Entry->WinABitmap)
+			DeleteObject(Entry->WinABitmap);
 		Entry->Flags |= ENTRY_DELETED;
 		pData->Dirty = TRUE;
 		return 0;
@@ -874,12 +1073,18 @@ static BOOL CALLBACK TPack_DlgProc
 			{
 				HWND	PreviewWnd;
 				HBITMAP	hbm;
+				HBITMAP	ahbm;
 				HDC		hDC;
 	
 				PreviewWnd = GetDlgItem(pData->hwnd, IDC_PREVIEW);
 				hDC = GetDC(PreviewWnd);
 				hbm = CreateHBitmapFromgeBitmap(Entry->Bitmap, hDC);
 				Entry->WinBitmap = hbm;
+				if(geBitmap_HasAlpha(Entry->Bitmap))
+				{
+					ahbm = CreateHBitmapFromgeBitmap(geBitmap_GetAlpha(Entry->Bitmap), hDC);
+					Entry->WinABitmap = ahbm;
+				}
 				ReleaseDC(PreviewWnd, hDC);
 			}
 	

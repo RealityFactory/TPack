@@ -111,6 +111,7 @@
 #define IDC_STATICSUBMOTION             1061
 #define IDC_TEXTURESIZE                 1062
 #define IDC_PREVIEW                     1063
+#define IDC_CHECK1                      1064
 #define ID_FILE_EXIT                    40001
 #define ID_FILE_OPEN                    40002
 #define ID_MOTION_SELECT                40003
@@ -135,7 +136,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         40016
-#define _APS_NEXT_CONTROL_VALUE         1064
+#define _APS_NEXT_CONTROL_VALUE         1065
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
