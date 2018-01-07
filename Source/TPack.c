@@ -1,5 +1,3 @@
-
-
 /****************************************************************************************/
 /*  TPACK.C                                                                             */
 /*                                                                                      */
@@ -7,7 +5,7 @@
 /*  Description: Texture packer UI implementation                                       */
 /*                                                                                      */
 /*  The contents of this file are subject to the Genesis3D Public License               */
-/*  Version 1.01 (the "License"); you may not use this file except in                    */
+/*  Version 1.01 (the "License"); you may not use this file except in                   */
 /*  compliance with the License. You may obtain a copy of the License at                */
 /*  http://www.genesis3d.com                                                            */
 /*                                                                                      */
@@ -17,8 +15,8 @@
 /*  under the License.                                                                  */
 /*                                                                                      */
 /*  The Original Code is Genesis3D, released March 25, 1999.                            */
-/*Genesis3D Version 1.1 released November 15, 1999                            */
-/*  Copyright (C) 1999 WildTangent, Inc. All Rights Reserved           */
+/*  Genesis3D Version 1.1 released November 15, 1999                                    */
+/*  Copyright (C) 1999 WildTangent, Inc. All Rights Reserved                            */
 /*                                                                                      */
 /****************************************************************************************/
 
@@ -35,11 +33,11 @@
   4) Added HandleInitMenu called with WM_INITMENU message to properly set
      the pulldown menu state.
 
-  TODO: 1) Getting the palette entries is pretty slow. I can't seem to get 
+  TODO: 1) Getting the palette entries is pretty slow. I can't seem to get
            geBitmap_Palette_GetData() to work propoerly.
         2) Progress bar for extract all would be nice.
         3) In 8-bit color video mode, TPack doesn't display the textures
-           properly. That's because the texture palette is not being 
+           properly. That's because the texture palette is not being
            "Realized".
 ---------------------------------------------------------------------------------*/
 
@@ -127,17 +125,17 @@ static	void	Save(TPack_WindowData *pData, const char *Path)
 		OPENFILENAME ofn;	// Windows open filename structure...
 		char Filter[_MAX_PATH];
 		char	Dir[_MAX_PATH];
-	
+
 		FileName[0] = '\0';
 
 		GetCurrentDirectory(sizeof(Dir), Dir);
-	
+
 		ofn.lStructSize = sizeof (OPENFILENAME);
 		ofn.hwndOwner = pData->hwnd;
 		ofn.hInstance = pData->Instance;
 		{
 			char *c;
-	
+
 			// build actor file filter string
 			strcpy (Filter, "Texture Libraries (*.txl)");
 			c = &Filter[strlen (Filter)] + 1;
@@ -169,8 +167,8 @@ static	void	Save(TPack_WindowData *pData, const char *Path)
 
 		Path = FileName;
 	}
-	
-	unlink(Path);
+
+	_unlink(Path);
 	VFS = geVFile_OpenNewSystem(NULL, GE_VFILE_TYPE_VIRTUAL, Path, NULL, GE_VFILE_OPEN_CREATE | GE_VFILE_OPEN_DIRECTORY);
 	if	(!VFS)
 	{
@@ -205,14 +203,14 @@ static	void	Save(TPack_WindowData *pData, const char *Path)
 
 	strcpy(pData->TXLFileName, Path);
 	pData->FileNameIsValid = TRUE;
-	
+
 	if	(geVFile_Close(VFS) == GE_FALSE)
 		NonFatalError("I/O error writing %s", Path);
 	else
 		pData->Dirty = FALSE;
 }
 
-long DLL_CALLCONV VFS_Tell(fi_handle handle)
+/*long DLL_CALLCONV VFS_Tell(fi_handle handle)
 {
 	long position;
 	geVFile *File = (geVFile *)handle;
@@ -243,7 +241,7 @@ unsigned DLL_CALLCONV VFS_Read(void *buffer, unsigned size, unsigned count, fi_h
 	unsigned csize = size*count;
 	geVFile_Read(File, buffer, (int)csize);
 	return csize;
-}
+}*/
 
 static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *Path)
 {
@@ -259,7 +257,7 @@ static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *P
 	File = NULL;
 
 	_splitpath(Path, NULL, NULL, FileName, NULL);
-	Name = strdup(FileName);
+	Name = _strdup(FileName);
 	if	(!Name)
 	{
 		NonFatalError("Memory allocation error processing %s", Path);
@@ -278,6 +276,7 @@ static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *P
 	}
 
 	Bitmap = geBitmap_CreateFromFile(File);
+
 /*
 	if(!Bitmap)
 	{
@@ -384,6 +383,11 @@ static	BOOL	AddTexture(TPack_WindowData *pData, geVFile *BaseFile, const char *P
 	}
 */
 	geVFile_Close(File);
+	if	(!Bitmap)
+	{
+		NonFatalError("%s is not a valid image format", Path);
+		goto fail;
+	}
 	geBitmap_GetInfo(Bitmap, &PInfo, &SInfo);
 //	if	(PInfo.Format != GE_PIXELFORMAT_8BIT)
 //	{
@@ -431,7 +435,7 @@ static	void	Load(TPack_WindowData *pData)
 							"Do you want to save changes to the current file?",
 							"Texture Packer",
 							MB_YESNOCANCEL);
-		
+
 		if	(Result == IDCANCEL)
 			return;
 
@@ -468,17 +472,17 @@ static	void	Load(TPack_WindowData *pData)
 		OPENFILENAME ofn;	// Windows open filename structure...
 		char Filter[_MAX_PATH];
 		char	Dir[_MAX_PATH];
-	
+
 		FileName[0] = '\0';
 
 		GetCurrentDirectory(sizeof(Dir), Dir);
-	
+
 		ofn.lStructSize = sizeof (OPENFILENAME);
 		ofn.hwndOwner = pData->hwnd;
 		ofn.hInstance = pData->Instance;
 		{
 			char *c;
-	
+
 			// build actor file filter string
 			strcpy (Filter, "Texture Libraries (*.txl)");
 			c = &Filter[strlen (Filter)] + 1;
@@ -508,7 +512,7 @@ static	void	Load(TPack_WindowData *pData)
 		if	(!GetOpenFileName (&ofn))
 			return;
 	}
-	
+
 	VFS = geVFile_OpenNewSystem(NULL, GE_VFILE_TYPE_VIRTUAL, FileName, NULL, GE_VFILE_OPEN_READONLY | GE_VFILE_OPEN_DIRECTORY);
 	if	(!VFS)
 	{
@@ -523,7 +527,7 @@ static	void	Load(TPack_WindowData *pData)
 		geVFile_Close(VFS);
 		return;
 	}
-	
+
 	while	(geVFile_FinderGetNextFile(Finder) != GE_FALSE)
 	{
 		geVFile_Properties	Properties;
@@ -539,7 +543,7 @@ static	void	Load(TPack_WindowData *pData)
 	strcpy(pData->TXLFileName, FileName);
 	pData->FileNameIsValid = TRUE;
 	pData->Dirty = FALSE;
-	
+
 	geVFile_Close(VFS);
 }
 
@@ -711,31 +715,32 @@ static	BOOL Render2d_Blit(HDC hDC, HBITMAP Bmp,  HBITMAP Alpha, const RECT *Sour
 	DestHeight = DestRect->bottom - DestRect->top;
 	SetStretchBltMode(hDC, COLORONCOLOR);
 	StretchBlt(hDC,
-				   DestRect->left,
-				   DestRect->top,
-				   DestHeight,
-				   DestHeight,
-				   MemDC,
-				   SourceRect->left,
-				   SourceRect->top,
-				   SourceWidth,
-				   SourceHeight,
-				   SRCCOPY);
+				DestRect->left,
+				DestRect->top,
+				DestHeight,
+				DestHeight,
+				MemDC,
+				SourceRect->left,
+				SourceRect->top,
+				SourceWidth,
+				SourceHeight,
+				SRCCOPY);
+
 	if(Alpha)
 	{
 		SelectObject(MemDC, Alpha);
 		SetStretchBltMode(hDC, COLORONCOLOR);
 		StretchBlt(hDC,
-				   DestRect->left+DestHeight+2,
-				   DestRect->top,
-				   DestHeight,
-				   DestHeight,
-				   MemDC,
-				   SourceRect->left,
-				   SourceRect->top,
-				   SourceWidth,
-				   SourceHeight,
-				   SRCCOPY);
+					DestRect->left+DestHeight+2,
+					DestRect->top,
+					DestHeight,
+					DestHeight,
+					MemDC,
+					SourceRect->left,
+					SourceRect->top,
+					SourceWidth,
+					SourceHeight,
+					SRCCOPY);
 	}
 
 	DeleteDC(MemDC);
@@ -783,7 +788,7 @@ static LRESULT wm_Command
 								"Do you want to save changes before quitting?",
 								"Texture Packer",
 								MB_YESNOCANCEL);
-			
+
 			if	(Result == IDCANCEL)
 				return 0;
 
@@ -808,7 +813,7 @@ static LRESULT wm_Command
 
 	// Extract all resource entries to individual BMP files.
 	// Added DJT (see revision note - 4/18/99)
-	case ID_OPTIONS_EXTRACTALL: 
+	case ID_OPTIONS_EXTRACTALL:
 		{
 			TPack_ExtractAll(pData);
 		}
@@ -816,7 +821,7 @@ static LRESULT wm_Command
 
 	// Extract the selected resource entry to BMP file.
 	// Added DJT (see revision note - 4/18/99)
-	case ID_OPTIONS_EXTRACTSELECTED: 
+	case ID_OPTIONS_EXTRACTSELECTED:
 		{
 			TPack_ExtractSelected(pData);
 		}
@@ -962,7 +967,7 @@ static BOOL TPack_InitializeDialog (HWND hwnd)
 	ListWnd = GetDlgItem(hwnd, IDC_TEXTURELIST);
 	SetWindowLong(ListWnd, GWL_USERDATA, (LONG)GetWindowLong(ListWnd, GWL_WNDPROC));
 	SetWindowLong(ListWnd, GWL_WNDPROC, (LONG)TPack_ListBoxWndProc);
-	
+
 	Font = CreateFont( -24,
     					    0,0,0, 0,
     					    0,0,0,0,OUT_TT_ONLY_PRECIS ,0,0,0, "Arial Black");
@@ -973,7 +978,22 @@ static BOOL TPack_InitializeDialog (HWND hwnd)
 
 	DragAcceptFiles (hwnd, TRUE);
 
-	FreeImage_Initialise(FALSE);
+	// center dialog on desktop
+	{
+		RECT WndRect, ScreenRect;
+		int Width, Height;
+
+		GetWindowRect(hwnd, &WndRect);
+		Width = WndRect.right - WndRect.left;
+		Height = WndRect.bottom - WndRect.top;
+
+		GetWindowRect(GetDesktopWindow(), &ScreenRect);
+		SetWindowPos(hwnd, 0, (((ScreenRect.right - ScreenRect.left) / 2) - (Width / 2)),
+					 (((ScreenRect.bottom - ScreenRect.top) / 2) - (Height / 2)),
+					  Width, Height, SWP_NOZORDER | SWP_NOSIZE);
+	}
+
+//	FreeImage_Initialise(FALSE);
 
 	return TRUE;
 }
@@ -994,7 +1014,7 @@ static void TPack_ShutdownAll
 		geRam_Free (pData);
 	}
 
-	FreeImage_DeInitialise();
+//	FreeImage_DeInitialise();
 
 	SetWindowLong (hwnd, GWL_USERDATA, (LPARAM)NULL);
 }
@@ -1051,7 +1071,7 @@ static BOOL CALLBACK TPack_DlgProc
 		pData->Dirty = TRUE;
 		return 0;
 	}
-		
+
 	case	MSG_SELECT_BITMAP:
 	{
 		char	Buff[128];
@@ -1075,7 +1095,7 @@ static BOOL CALLBACK TPack_DlgProc
 				HBITMAP	hbm;
 				HBITMAP	ahbm;
 				HDC		hDC;
-	
+
 				PreviewWnd = GetDlgItem(pData->hwnd, IDC_PREVIEW);
 				hDC = GetDC(PreviewWnd);
 				hbm = CreateHBitmapFromgeBitmap(Entry->Bitmap, hDC);
@@ -1087,7 +1107,7 @@ static BOOL CALLBACK TPack_DlgProc
 				}
 				ReleaseDC(PreviewWnd, hDC);
 			}
-	
+
 			if	(!Entry->WinBitmap)
 			{
 				NonFatalError("Memory allocation error creating bitmap");
@@ -1097,7 +1117,7 @@ static BOOL CALLBACK TPack_DlgProc
 
 		InvalidateRect(GetDlgItem(hwnd, IDC_PREVIEW), NULL, TRUE);
 		pData->SelectedEntry = Entry;
-		
+
 		if	(Entry)
 			sprintf(Buff, "%dx%d", geBitmap_Width(Entry->Bitmap), geBitmap_Height(Entry->Bitmap));
 		else
@@ -1158,11 +1178,11 @@ int CALLBACK WinMain
 
     // create main window.
 	// This is the controlling dialog.
-    TPack_DlgHandle = CreateDialog 
+    TPack_DlgHandle = CreateDialog
 	(
-		instance, 
+		instance,
 		MAKEINTRESOURCE (IDD_TEXTUREPACKER),
-		NULL, 
+		NULL,
 		TPack_DlgProc
 	);
 
@@ -1171,8 +1191,9 @@ int CALLBACK WinMain
         return 0;
     }
 
+
 	pData = TPack_GetWindowData (TPack_DlgHandle);
-	
+
 	ShowWindow (TPack_DlgHandle, SW_SHOWNORMAL);
 	UpdateWindow (TPack_DlgHandle);
 
@@ -1189,7 +1210,7 @@ int CALLBACK WinMain
 		while (GetMessage( &Msg, NULL, 0, 0))
 		{
 			/*
-			  This is kind of weird.  
+			  This is kind of weird.
 			  The main window is a dialog that has a menu.
 			  In order for accelerators to work, we have to check the accelerators
 			  first, then IsDialogMessage, then standard Windows message processing.
@@ -1204,7 +1225,7 @@ int CALLBACK WinMain
 				}
 			}
 		}
-	}	
+	}
 
 	return 0;
 }
@@ -1216,10 +1237,13 @@ int CALLBACK WinMain
 
 #include <windowsx.h>      // Because I like those crackers.
 static int WriteBMP8(const char * pszFile, geBitmap *Bitmap);
+// changed QD 11/03
+static int WriteTGA(const char * pszFile, geBitmap *Bitmap);
+// end change
 
 // Error codes
-#define TPACKERROR_OK                0    
-#define TPACKERROR_UNKNOWN           (TPACKERROR_OK - 1)    
+#define TPACKERROR_OK                0
+#define TPACKERROR_UNKNOWN           (TPACKERROR_OK - 1)
 #define TPACKERROR_WRITE             (TPACKERROR_OK - 2)
 #define TPACKERROR_MEMORYALLOCATION  (TPACKERROR_OK - 3)
 #define TPACKERROR_CREATEFILE        (TPACKERROR_OK - 4)
@@ -1288,9 +1312,18 @@ void TPack_ExtractAll(TPack_WindowData * pData)
 				strcpy(szFile, szPath);
 				strcat(szFile, "\\");
 				strcat(szFile, pEntry->Name);
-				strcat(szFile, ".bmp");
+// changed QD 11/03
+				if(geBitmap_HasAlpha(pEntry->Bitmap))
+					strcat(szFile, ".tga");
+				else
+					strcat(szFile, ".bmp");
 
-				nErrorCode = WriteBMP8(szFile, pEntry->Bitmap);
+
+				if(geBitmap_HasAlpha(pEntry->Bitmap))
+					nErrorCode = WriteTGA(szFile, pEntry->Bitmap);
+				else
+					nErrorCode = WriteBMP8(szFile, pEntry->Bitmap);
+// end change
 
 				if (nErrorCode != TPACKERROR_OK)
 				{
@@ -1355,9 +1388,17 @@ void TPack_ExtractSelected(TPack_WindowData * pData)
 			strcpy(szFile, szPath);
 			strcat(szFile, "\\");
 			strcat(szFile, pEntry->Name);
-			strcat(szFile, ".bmp");
+// changed QD 11/03
+			if(geBitmap_HasAlpha(pEntry->Bitmap))
+				strcat(szFile, ".tga");
+			else
+				strcat(szFile, ".bmp");
 
-			nErrorCode = WriteBMP8(szFile, pEntry->Bitmap);
+			if(geBitmap_HasAlpha(pEntry->Bitmap))
+				nErrorCode = WriteTGA(szFile, pEntry->Bitmap);
+			else
+				nErrorCode = WriteBMP8(szFile, pEntry->Bitmap);
+// end change
 
 			if (nErrorCode != TPACKERROR_OK)
 			{
@@ -1387,9 +1428,9 @@ void TPack_ExtractSelected(TPack_WindowData * pData)
 // 8-bit bitmap info
 typedef struct tagMY_BITMAPINFO
 {
-	BITMAPINFOHEADER bmiHeader; 
-	RGBQUAD          bmiColors[256]; 
-} MY_BITMAPINFO, *pMY_BITMAPINFO, **ppMY_BITMAPINFO; 
+	BITMAPINFOHEADER bmiHeader;
+	RGBQUAD          bmiColors[256];
+} MY_BITMAPINFO, *pMY_BITMAPINFO, **ppMY_BITMAPINFO;
 
 #define PAD32(i)     (((i)+31)/32*4)
 
@@ -1399,7 +1440,7 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 	gePixelFormat    Format;
 	geBitmap_Info    BitmapInfo;
 	int              nErrorCode = TPACKERROR_UNKNOWN;      // Return code
-	BITMAPFILEHEADER BmpHeader;                            // bitmap file-header 
+	BITMAPFILEHEADER BmpHeader;                            // bitmap file-header
 	MY_BITMAPINFO    BmInfo;
 	uint32           nBytesPerPixel;
 	void *           pPixelData;
@@ -1416,16 +1457,15 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 //	uint8            PaletteData[768];        // palette data (see note below)
 
 	// Create the .BMP file.
-	hFile = CreateFile(pszFile, 
-                       GENERIC_READ | GENERIC_WRITE,
-				       (DWORD) 0, 
-                       NULL,
-				       CREATE_ALWAYS, 
-                       FILE_ATTRIBUTE_NORMAL,
-				       (HANDLE) NULL);
+	hFile = CreateFile(pszFile,
+						GENERIC_READ | GENERIC_WRITE,
+						(DWORD) 0,
+						NULL,
+						CREATE_ALWAYS,
+						FILE_ATTRIBUTE_NORMAL,
+						(HANDLE) NULL);
 
 	if (hFile == INVALID_HANDLE_VALUE)
-
 		return TPACKERROR_CREATEFILE;
 
 	// get 8-bit palettized bitmap
@@ -1500,7 +1540,7 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 	BmInfo.bmiHeader.biSizeImage     = 0;
 	BmInfo.bmiHeader.biXPelsPerMeter = BmInfo.bmiHeader.biYPelsPerMeter = 0;   // 10000;
 
-	if (BmInfo.bmiHeader.biBitCount< 24) 
+	if (BmInfo.bmiHeader.biBitCount< 24)
 		BmInfo.bmiHeader.biClrUsed = (1 << BmInfo.bmiHeader.biBitCount);
 	else
 		BmInfo.bmiHeader.biClrUsed = 0;
@@ -1508,7 +1548,7 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 	BmInfo.bmiHeader.biClrImportant  = 0;
 
 	nNewStride   = PAD32(BitmapInfo.Width * BmInfo.bmiHeader.biBitCount);
-	nOldStride   = BitmapInfo.Width * nBytesPerPixel;   
+	nOldStride   = BitmapInfo.Width * nBytesPerPixel;
 
 	BmInfo.bmiHeader.biSizeImage     = nNewStride * BitmapInfo.Height;
 
@@ -1572,20 +1612,20 @@ static int WriteBMP8(const char * pszFile, geBitmap *pBitmap)
 		geRam_Free(pTmp);
 
 	// Build the file header
-    BmpHeader.bfType = 0x4d42;        // 0x42 = "B" 0x4d = "M" 
+	BmpHeader.bfType = 0x4d42;        // 0x42 = "B" 0x4d = "M"
 
-    // Compute the size of the entire file. 
-    BmpHeader.bfSize = (DWORD)(sizeof(BITMAPFILEHEADER) +  
-	                          BmInfo.bmiHeader.biSize + 
-	                          (BmInfo.bmiHeader.biClrUsed  * sizeof(RGBQUAD)) + 
-	                          (nNewStride * BitmapInfo.Height)); 
-    BmpHeader.bfReserved1 = 0;
-	BmpHeader.bfReserved2 = 0; 
+	// Compute the size of the entire file.
+	BmpHeader.bfSize = (DWORD)(sizeof(BITMAPFILEHEADER) +
+	                          BmInfo.bmiHeader.biSize +
+	                          (BmInfo.bmiHeader.biClrUsed  * sizeof(RGBQUAD)) +
+	                          (nNewStride * BitmapInfo.Height));
+	BmpHeader.bfReserved1 = 0;
+	BmpHeader.bfReserved2 = 0;
 
-    // Compute the offset to the array of color indices. 
-    BmpHeader.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + 
-	                             BmInfo.bmiHeader.biSize + 
-	                             (BmInfo.bmiHeader.biClrUsed * sizeof(RGBQUAD)); 
+	// Compute the offset to the array of color indices.
+	BmpHeader.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) +
+	                             BmInfo.bmiHeader.biSize +
+	                             (BmInfo.bmiHeader.biClrUsed * sizeof(RGBQUAD));
 
 	// Write the BMP file header
     if (!WriteFile(hFile, (LPVOID)&BmpHeader, sizeof(BITMAPFILEHEADER), (LPDWORD)&nBytesWritten, (NULL)))
@@ -1633,6 +1673,200 @@ ExitWriteBitmap:
 
 	return nErrorCode;
 }
+
+
+// changed QD 11/03
+#pragma pack(1)
+
+typedef struct TGAHEADER
+{
+	char	IDLength;
+	char	ColorMapType;
+	char	ImageType;
+	uint16	CMFirstEntry;
+	uint16	CMLength;
+	char	CMEntrySize;
+	uint16	Xorigin;
+	uint16	Yorigin;
+	uint16	Width;
+	uint16	Height;
+	char	PixelDepth;
+	char	ImageDescriptor;
+} TGAHEADER;
+
+#pragma pack()
+
+
+static int WriteTGA(const char * pszFile, geBitmap *pBitmap)
+{
+	geBitmap *      pLock = NULL;
+	geBitmap *		pLockA = NULL;
+	gePixelFormat   Format;
+	gePixelFormat   FormatA;
+	geBitmap_Info   BitmapInfo;
+	int             nErrorCode = TPACKERROR_UNKNOWN;      // Return code
+	TGAHEADER		tgah;
+	long			footer = 0;
+	char			signature[18] = "TRUEVISION-XFILE.";
+	//uint32          nBytesPerPixel;
+	uint8 *         pPixelData;
+	uint8 *			pPixelDataA;
+	//int             nNewStride = 0;
+	//int             nOldStride = 0;
+	int             i,j;
+	HANDLE          hFile = NULL;
+	DWORD           nBytesWritten;
+
+	// Create the .TGA file.
+	hFile = CreateFile(pszFile,
+                       GENERIC_READ | GENERIC_WRITE,
+				       (DWORD) 0,
+                       NULL,
+				       CREATE_ALWAYS,
+                       FILE_ATTRIBUTE_NORMAL,
+				       (HANDLE) NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+		return TPACKERROR_CREATEFILE;
+
+	// get 24-bit bitmap
+	Format = 	GE_PIXELFORMAT_24BIT_BGR;
+	FormatA =	GE_PIXELFORMAT_8BIT_GRAY;
+
+	if ( geBitmap_GetBits(pBitmap))
+	{
+		pLock = pBitmap;
+	}
+	else
+	{
+		if (!geBitmap_LockForRead(pBitmap, &pLock, 0, 0, Format,GE_FALSE,0))
+		{
+			return FALSE;
+		}
+	}
+
+	if (geBitmap_GetBits(geBitmap_GetAlpha(pBitmap)))
+	{
+		pLockA = geBitmap_GetAlpha(pBitmap);
+	}
+	else
+	{
+		if (!geBitmap_LockForRead(geBitmap_GetAlpha(pBitmap), &pLockA, 0, 0, FormatA,	GE_FALSE,0))
+		{
+			return FALSE;
+		}
+	}
+
+	geBitmap_GetInfo(pLock, &BitmapInfo, NULL);
+	if ( BitmapInfo.Format != Format )
+	{
+		nErrorCode = TPACKERROR_UNKNOWN;
+		goto ExitWriteBitmap;
+	}
+
+
+	tgah.IDLength=0;
+	tgah.ColorMapType=0;
+	tgah.ImageType=2; // we create an uncompressed, true color image
+	tgah.CMFirstEntry=0;
+	tgah.CMLength=0;
+	tgah.CMEntrySize=0;
+	tgah.Xorigin=0;
+	tgah.Yorigin=0;
+
+	tgah.Width= (uint16)BitmapInfo.Width;
+	tgah.Height = (uint16)BitmapInfo.Height;
+
+	tgah.PixelDepth=32;
+	tgah.ImageDescriptor=8; //00001000 - not flipped, 8 alpha bits
+
+
+	pPixelData     = (uint8*)geBitmap_GetBits(pLock);
+
+	pPixelDataA     = (uint8*)geBitmap_GetBits(pLockA);
+
+	// Write the tga header
+	if (!WriteFile(hFile, (LPVOID)&tgah, sizeof(TGAHEADER), (LPDWORD)&nBytesWritten, (NULL)))
+	{
+		nErrorCode = TPACKERROR_WRITE;
+		goto ExitWriteBitmap;
+	}
+
+	// write pixels
+	pPixelData+=3*tgah.Width*(tgah.Height-1);
+	pPixelDataA+=tgah.Width*(tgah.Height-1);
+	for(i=0;i<tgah.Height;i++)
+	{
+		for(j=0;j<tgah.Width;j++)
+		{
+			if (!WriteFile(hFile, (LPVOID)pPixelData, 3, (LPDWORD)&nBytesWritten, (NULL)))
+			{
+				nErrorCode = TPACKERROR_WRITE;
+				goto ExitWriteBitmap;
+			}
+
+			pPixelData+=3;
+
+
+			if (!WriteFile(hFile, (LPVOID)pPixelDataA, 1, (LPDWORD)&nBytesWritten, (NULL)))
+			{
+				nErrorCode = TPACKERROR_WRITE;
+				goto ExitWriteBitmap;
+			}
+			pPixelDataA++;
+		}
+
+		pPixelData-=2*3*tgah.Width;
+		pPixelDataA-=2*tgah.Width;
+	}
+
+	// write the signature
+	if (!WriteFile(hFile, (LPVOID)&footer, 4, (LPDWORD)&nBytesWritten, (NULL)))
+	{
+		nErrorCode = TPACKERROR_WRITE;
+		goto ExitWriteBitmap;
+	}
+
+	if (!WriteFile(hFile, (LPVOID)&footer, 4, (LPDWORD)&nBytesWritten, (NULL)))
+	{
+		nErrorCode = TPACKERROR_WRITE;
+		goto ExitWriteBitmap;
+	}
+
+	if (!WriteFile(hFile, (LPVOID)signature, 18, (LPDWORD)&nBytesWritten, (NULL)))
+	{
+		nErrorCode = TPACKERROR_WRITE;
+		goto ExitWriteBitmap;
+	}
+
+	CloseHandle(hFile);
+	hFile = NULL;
+
+	// Success!
+	nErrorCode = TPACKERROR_OK;
+
+ExitWriteBitmap:
+
+	// Clean-up
+	//------------------------------------
+	// Make sure the file gets closed
+	if (hFile)
+		CloseHandle(hFile);
+
+	// Unlock the geBitmap
+	if ( pLock != pBitmap )
+	{
+		geBitmap_UnLock (pLock);
+	}
+
+	if ( pLockA != geBitmap_GetAlpha(pBitmap) )
+	{
+		geBitmap_UnLock (pLockA);
+	}
+
+	return nErrorCode;
+}
+// end change
 
 
 #pragma warning (default:4100)

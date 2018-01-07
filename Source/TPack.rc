@@ -46,6 +46,7 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
+1 RT_MANIFEST TPack.exe.manifest
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -89,12 +90,12 @@ CAPTION "RealityFactory Texture Packer"
 MENU IDR_MENU1
 FONT 8, "MS Sans Serif"
 BEGIN
-    LISTBOX         IDC_TEXTURELIST,0,0,112,210,LBS_SORT |
+    LISTBOX         IDC_TEXTURELIST,0,0,112,210,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP,
                     WS_EX_ACCEPTFILES
     CONTROL         "",IDC_PREVIEW,"Static",SS_ETCHEDFRAME | WS_BORDER,121,0,
                     365,170
-    EDITTEXT        IDC_TEXTURESIZE,216,180,191,23,ES_CENTER |
+    EDITTEXT        IDC_TEXTURESIZE,216,180,191,23,ES_CENTER | 
                     ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT 
                     WS_TABSTOP
     CTEXT           "Alpha Channel",IDC_STATIC,359,210,94,17,SS_CENTERIMAGE

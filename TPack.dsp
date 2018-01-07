@@ -96,75 +96,11 @@ LINK32=link.exe
 # PROP Default_Filter ".bmp;.cur;.ico"
 # Begin Source File
 
-SOURCE=.\res\blend.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\ffend.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\ffframe.ico
-# End Source File
-# Begin Source File
-
 SOURCE=.\res\mainicon.ico
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\pan.cur
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\pan.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\pause.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\play.ico
-# End Source File
-# Begin Source File
-
 SOURCE=.\Res\rfpack.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\rotate.cur
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\rotate.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\rrframe.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\rrstart.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\Sourceicon.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\stop.ico
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\TPack.bmp
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\zoom.cur
-# End Source File
-# Begin Source File
-
-SOURCE=.\res\zoom.ico
 # End Source File
 # End Group
 # Begin Source File
